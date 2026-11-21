@@ -17,6 +17,7 @@ export const FIELD_W = COLS * TILE;
 export const FIELD_H = ROWS * TILE;
 
 export const PLAYER_RADIUS = 13;
+export const PLAYER_COLLISION_RADIUS = 10; // smaller than the drawn body: lets the courier slide through 1-tile gaps without wedging on corners
 export const PLAYER_WALK_SPEED = 150;
 export const PLAYER_RUN_SPEED = 238;
 export const PLAYER_CLOSE_SEEN_DIST = 46;

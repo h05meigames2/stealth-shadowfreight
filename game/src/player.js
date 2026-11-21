@@ -3,7 +3,7 @@
 // core pickups and the exit. The game loop asks this object what happened.
 
 import {
-  PLAYER_RADIUS, PLAYER_WALK_SPEED, PLAYER_RUN_SPEED,
+  PLAYER_RADIUS, PLAYER_COLLISION_RADIUS, PLAYER_WALK_SPEED, PLAYER_RUN_SPEED,
   CHIME_THROW_RANGE, CHIMES_PER_LEVEL, NOISE_RUN_RADIUS, LAMP_RADIUS,
   FIELD_Y, FIELD_W, FIELD_H,
 } from './config.js';
@@ -32,6 +32,18 @@ export class Player {
   }
 
   // Move with axis-separated collision so the player slides along walls.
+  // A blocked axis also tries small nudges on the other axis, so the
+  // courier slides around crate corners instead of wedging in 1-tile gaps.
+  attemptMove(nx, ny, axis) {
+    const R = PLAYER_COLLISION_RADIUS;
+    if (circleFits(this.level, nx, ny, R)) { this.x = nx; this.y = ny; return; }
+    for (const n of [3, -3, 6, -6, 9, -9]) {
+      const tx = axis === 'y' ? nx + n : nx;
+      const ty = axis === 'y' ? ny : ny + n;
+      if (circleFits(this.level, tx, ty, R)) { this.x = tx; this.y = ty; return; }
+    }
+  }
+
   update(dt, input, events) {
     const mv = input.moveVector();
     this.moving = mv.x !== 0 || mv.y !== 0;
@@ -39,8 +51,8 @@ export class Player {
     const speed = this.running ? PLAYER_RUN_SPEED : PLAYER_WALK_SPEED;
     const nx = this.x + mv.x * speed * dt;
     const ny = this.y + mv.y * speed * dt;
-    if (circleFits(this.level, nx, this.y, PLAYER_RADIUS)) this.x = nx;
-    if (circleFits(this.level, this.x, ny, PLAYER_RADIUS)) this.y = ny;
+    this.attemptMove(nx, this.y, 'x');
+    this.attemptMove(this.x, ny, 'y');
     if (this.moving) this.facing = Math.atan2(mv.y, mv.x);
 
     // Footsteps: soft when walking, a loud ring when running.

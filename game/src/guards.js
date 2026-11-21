@@ -13,7 +13,7 @@ import {
   DETECTION_ALERT_AT, CHASE_SECONDS, SEARCH_SECONDS, NOISE_HEAR_RADIUS,
   CHIME_HEAR_RADIUS, PLAYER_CLOSE_SEEN_DIST, LAMP_RADIUS,
 } from './config.js';
-import { hasLineOfSight, tileAt, isShadowTile, isBushTile } from './levels.js';
+import { hasLineOfSight, tileAt, isShadowTile, isBushTile, circleFits } from './levels.js';
 
 export class Guard {
   constructor(def, level) {
@@ -115,14 +115,26 @@ export class Guard {
     else if (this.state === 'investigate') this.updateInvestigate(dt, events);
   }
 
+  // Step toward a point, sliding along crate walls instead of clipping
+  // through them. Returns true when the target is reached.
   moveToward(tx, ty, speed, dt) {
     const dx = tx - this.x;
     const dy = ty - this.y;
     const d = Math.hypot(dx, dy);
     if (d < 1) return true;
     const step = Math.min(d, speed * dt);
-    this.x += (dx / d) * step;
-    this.y += (dy / d) * step;
+    const nx = this.x + (dx / d) * step;
+    const ny = this.y + (dy / d) * step;
+    if (circleFits(this.level, nx, ny, GUARD_RADIUS - 2)) {
+      this.x = nx;
+      this.y = ny;
+    } else if (circleFits(this.level, nx, this.y, GUARD_RADIUS - 2)) {
+      this.x = nx;
+    } else if (circleFits(this.level, this.x, ny, GUARD_RADIUS - 2)) {
+      this.y = ny;
+    } else {
+      return d < 2;
+    }
     this.dir = Math.atan2(dy, dx);
     return d - step < 2;
   }
